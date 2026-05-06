@@ -12,9 +12,10 @@
 ### 1.3 Security Baseline
 - Development-only event signing in Rust using SHA-256 hashes and a shared secret.
 - Security posture exposed at `/api/security/baseline`.
+- Startup validation blocks unsafe default secrets on external interfaces.
 - Proper key management, WireGuard, and Signal-style channels remain follow-on work.
 ### 1.4 Networking Baseline
-- Rust service exposes health, topology, status, and event ingestion endpoints.
+- Rust service exposes health, topology, status, replication-state, and event ingestion endpoints.
 - Bootstrap peers are configured via `STRATUS_BOOTSTRAP_PEERS`.
 - This iteration models node-to-node topology without implementing IGP/BGP yet.
 ## Immediate Next Steps

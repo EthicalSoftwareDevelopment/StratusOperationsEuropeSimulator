@@ -11,11 +11,17 @@ services:
       STRATUS_PUBLIC_ENDPOINT: http://rust-node-alpha:8080
       STRATUS_DB_PATH: /app/data/sql/node-alpha.db
       STRATUS_BOOTSTRAP_PEERS: http://rust-node-beta:8080
-      STRATUS_SHARED_SECRET: development-shared-secret
+      STRATUS_SHARED_SECRET: development-shared-secret-alpha
     ports:
       - "8080:8080"
     volumes:
       - ../../data/sql:/app/data/sql
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
   rust-node-beta:
     build:
       context: ../..
@@ -28,17 +34,24 @@ services:
       STRATUS_PUBLIC_ENDPOINT: http://rust-node-beta:8080
       STRATUS_DB_PATH: /app/data/sql/node-beta.db
       STRATUS_BOOTSTRAP_PEERS: http://rust-node-alpha:8080
-      STRATUS_SHARED_SECRET: development-shared-secret
+      STRATUS_SHARED_SECRET: development-shared-secret-beta
     ports:
       - "8081:8080"
     volumes:
       - ../../data/sql:/app/data/sql
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
   python-ops:
     build:
       context: ../..
       dockerfile: deployment/docker/Dockerfile.python
     depends_on:
-      - rust-node-alpha
+      rust-node-alpha:
+        condition: service_healthy
     environment:
       PYTHONPATH: /app/src/python
-    command: ["python", "-m", "app.main", "probe-service", "--url", "http://rust-node-alpha:8080"]
+    command: ["python", "-m", "app.main", "inspect-service", "--url", "http://rust-node-alpha:8080"]

@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 from app.service_client import RustServiceClient
 from app.storage import fetch_local_status, initialize_node_database
 def build_parser() -> argparse.ArgumentParser:
@@ -16,7 +17,21 @@ def build_parser() -> argparse.ArgumentParser:
     status_parser.add_argument("--db", required=True, help="Path to the SQLite database file")
     probe_parser = subparsers.add_parser("probe-service", help="Query the Rust foundation service")
     probe_parser.add_argument("--url", required=True, help="Base URL for the Rust service")
+    inspect_parser = subparsers.add_parser("inspect-service", help="Collect a complete Rust service snapshot")
+    inspect_parser.add_argument("--url", required=True, help="Base URL for the Rust service")
     return parser
+
+
+def collect_service_snapshot(client: Any) -> dict[str, object]:
+    return {
+        "health": client.health(),
+        "status": client.status(),
+        "topology": client.topology(),
+        "replication": client.replication_state(),
+        "security": client.security_baseline(),
+    }
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -32,14 +47,9 @@ def main() -> int:
     if args.command == "status":
         print(json.dumps(fetch_local_status(args.db), indent=2))
         return 0
-    if args.command == "probe-service":
+    if args.command in {"probe-service", "inspect-service"}:
         client = RustServiceClient(args.url)
-        payload = {
-            "health": client.health(),
-            "status": client.status(),
-            "topology": client.topology(),
-        }
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(collect_service_snapshot(client), indent=2))
         return 0
     parser.error("Unsupported command")
     return 2

@@ -4,7 +4,7 @@ COPY data/sql ./data/sql
 COPY src/rust ./src/rust
 RUN cargo build --manifest-path src/rust/Cargo.toml --release
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/src/rust/target/release/stratus-foundation-service /usr/local/bin/stratus-foundation-service
 COPY data/sql ./data/sql
@@ -12,4 +12,5 @@ ENV STRATUS_HOST=0.0.0.0
 ENV STRATUS_PORT=8080
 ENV STRATUS_DB_PATH=/app/data/sql/node-alpha.db
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=5 CMD curl -fsS http://127.0.0.1:8080/health || exit 1
 CMD ["stratus-foundation-service"]

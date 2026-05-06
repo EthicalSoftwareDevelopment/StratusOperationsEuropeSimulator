@@ -22,3 +22,10 @@ class RustServiceClient:
         return self.get_json("/api/status")
     def topology(self) -> dict[str, Any]:
         return self.get_json("/api/network/topology")
+
+    def replication_state(self) -> dict[str, Any]:
+        return self.get_json("/api/replication/state")
+
+    def security_baseline(self) -> dict[str, Any]:
+        return self.get_json("/api/security/baseline")
+

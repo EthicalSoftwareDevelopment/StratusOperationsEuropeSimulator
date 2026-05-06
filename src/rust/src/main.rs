@@ -26,12 +26,19 @@ struct SecurityBaselineResponse {
     transport_encryption: &'static str,
     message_signing: &'static str,
     credential_scope: &'static str,
+    development_secret_in_use: bool,
+    bootstrap_peer_count: usize,
 }
 #[derive(Debug, Serialize)]
 struct NetworkTopologyResponse {
     local_node_id: String,
     local_endpoint: String,
     bootstrap_peers: Vec<String>,
+}
+#[derive(Debug, Serialize)]
+struct ReplicationStateResponse {
+    local_node_id: String,
+    replication_peers: Vec<stratus_foundation_service::db::ReplicationStateRecord>,
 }
 #[derive(Debug, Deserialize)]
 struct NewEventRequest {
@@ -54,6 +61,7 @@ impl IntoResponse for AppError {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = AppConfig::from_env();
+    config.validate()?;
     let bind_address = config.bind_address();
     let database = Database::new(config.db_path.clone());
     database.bootstrap(&config)?;
@@ -62,6 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/status", get(status))
         .route("/api/nodes", get(nodes))
         .route("/api/network/topology", get(network_topology))
+        .route("/api/replication/state", get(replication_state))
         .route("/api/security/baseline", get(security_baseline))
         .route("/api/events", post(create_event))
         .with_state(AppState { config, database });
@@ -97,11 +106,14 @@ async fn nodes(State(state): State<AppState>) -> Result<Json<Vec<stratus_foundat
         .map(Json)
         .map_err(|error| AppError::Internal(error.to_string()))
 }
-async fn security_baseline() -> Json<SecurityBaselineResponse> {
+async fn security_baseline(State(state): State<AppState>) -> Json<SecurityBaselineResponse> {
+    let config = state.config;
     Json(SecurityBaselineResponse {
         transport_encryption: "planned via WireGuard and TLS in follow-on iterations",
         message_signing: "enabled for stored events using SHA-256 development signatures",
         credential_scope: "shared development secret; replace with per-node keys in Phase 1.3 hardening",
+        development_secret_in_use: config.uses_development_secret(),
+        bootstrap_peer_count: config.bootstrap_peers.len(),
     })
 }
 async fn network_topology(State(state): State<AppState>) -> Json<NetworkTopologyResponse> {
@@ -110,6 +122,17 @@ async fn network_topology(State(state): State<AppState>) -> Json<NetworkTopology
         local_endpoint: state.config.public_endpoint,
         bootstrap_peers: state.config.bootstrap_peers,
     })
+}
+async fn replication_state(State(state): State<AppState>) -> Result<Json<ReplicationStateResponse>, AppError> {
+    let replication_peers = state
+        .database
+        .list_replication_state()
+        .map_err(|error| AppError::Internal(error.to_string()))?;
+
+    Ok(Json(ReplicationStateResponse {
+        local_node_id: state.config.node_id,
+        replication_peers,
+    }))
 }
 async fn create_event(
     State(state): State<AppState>,

@@ -23,9 +23,10 @@ Phase 1 foundation bootstrap for a hybrid Rust + Python simulation platform.
 ### 1.3 Security Baseline
 - Development-only event signing using SHA-256 and a shared secret
 - Security baseline endpoint exposed by the Rust service
+- Startup validation prevents unsafe default secrets on external interfaces
 
 ### 1.4 Networking Baseline
-- Health, status, topology, and event ingestion endpoints
+- Health, status, topology, replication-state, and event ingestion endpoints
 - Bootstrap peer configuration via environment variables
 
 ## Quick start
@@ -49,7 +50,7 @@ python -m app.main status --db ..\..\data\sql\node-bravo.db
 
 ```powershell
 Set-Location C:\Dev\StratusOperationsEuropeSimulator\src\python
-python -m app.main probe-service --url http://127.0.0.1:8080
+python -m app.main inspect-service --url http://127.0.0.1:8080
 ```
 
 ## Tests
@@ -67,4 +68,5 @@ python -m unittest discover -s tests\unit -p "test_*.py"
 
 - SQLite is intentionally file-based for Phase 1 and stored per simulated node.
 - Replication is modeled in schema and configuration; active synchronization is a next iteration.
+- The Rust service now exposes live replication-state inspection for peer visibility.
 - Full Signal/WireGuard integration is not implemented yet; the current security work is a development baseline.

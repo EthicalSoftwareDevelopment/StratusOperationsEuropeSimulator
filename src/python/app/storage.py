@@ -43,4 +43,32 @@ def fetch_local_status(db_path: str | Path) -> dict[str, Any]:
         "mission_record_count": mission_record_count,
         "event_count": event_count,
         "replication_peer_count": replication_peer_count,
+        "replication_state": fetch_replication_state(db_file),
     }
+
+
+def fetch_replication_state(db_path: str | Path) -> list[dict[str, Any]]:
+    db_file = Path(db_path)
+    if not db_file.exists():
+        raise FileNotFoundError(f"SQLite database not found: {db_file}")
+
+    with sqlite3.connect(db_file) as connection:
+        rows = connection.execute(
+            """
+            SELECT peer_node_id, last_replicated_event_id, last_sync_utc, status
+            FROM replication_state
+            ORDER BY peer_node_id ASC
+            """
+        ).fetchall()
+
+    return [
+        {
+            "peer_node_id": row[0],
+            "last_replicated_event_id": row[1],
+            "last_sync_utc": row[2],
+            "status": row[3],
+        }
+        for row in rows
+    ]
+
+
