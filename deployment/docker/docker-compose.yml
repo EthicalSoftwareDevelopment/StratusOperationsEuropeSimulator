@@ -1,0 +1,44 @@
+services:
+  rust-node-alpha:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.rust
+    environment:
+      STRATUS_HOST: 0.0.0.0
+      STRATUS_PORT: 8080
+      STRATUS_NODE_ID: node-alpha
+      STRATUS_NODE_ROLE: primary
+      STRATUS_PUBLIC_ENDPOINT: http://rust-node-alpha:8080
+      STRATUS_DB_PATH: /app/data/sql/node-alpha.db
+      STRATUS_BOOTSTRAP_PEERS: http://rust-node-beta:8080
+      STRATUS_SHARED_SECRET: development-shared-secret
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../data/sql:/app/data/sql
+  rust-node-beta:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.rust
+    environment:
+      STRATUS_HOST: 0.0.0.0
+      STRATUS_PORT: 8080
+      STRATUS_NODE_ID: node-beta
+      STRATUS_NODE_ROLE: replica
+      STRATUS_PUBLIC_ENDPOINT: http://rust-node-beta:8080
+      STRATUS_DB_PATH: /app/data/sql/node-beta.db
+      STRATUS_BOOTSTRAP_PEERS: http://rust-node-alpha:8080
+      STRATUS_SHARED_SECRET: development-shared-secret
+    ports:
+      - "8081:8080"
+    volumes:
+      - ../../data/sql:/app/data/sql
+  python-ops:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.python
+    depends_on:
+      - rust-node-alpha
+    environment:
+      PYTHONPATH: /app/src/python
+    command: ["python", "-m", "app.main", "probe-service", "--url", "http://rust-node-alpha:8080"]

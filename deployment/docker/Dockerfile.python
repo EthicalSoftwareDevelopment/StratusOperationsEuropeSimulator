@@ -1,0 +1,7 @@
+FROM python:3.10-slim
+WORKDIR /app
+COPY data/sql ./data/sql
+COPY src/python ./src/python
+WORKDIR /app/src/python
+ENV PYTHONPATH=/app/src/python
+CMD ["python", "-m", "app.main", "status", "--db", "/app/data/sql/node-alpha.db"]

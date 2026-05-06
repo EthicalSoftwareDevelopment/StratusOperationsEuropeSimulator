@@ -1,0 +1,8 @@
+[project]
+name = "stratus-phase1-python"
+version = "0.1.0"
+description = "Python orchestration helpers for the Stratus Phase 1 foundation"
+requires-python = ">=3.10"
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
